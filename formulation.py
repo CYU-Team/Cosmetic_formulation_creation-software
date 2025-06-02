@@ -39,7 +39,7 @@ def save_formulation (formulation, cursor, filename):
                 writer.writerow([ingredient[0], elt[0], elt[1], ingredient[1]])
     print("Formulation saved into",filename,".")
 
-connection_db = sqlite3.connect("raw_material.db")
+connection_db = sqlite3.connect("laboratoire.db")
 cursor = connection_db.cursor()
 
 formulation = []
