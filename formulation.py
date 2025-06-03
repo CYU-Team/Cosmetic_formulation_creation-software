@@ -5,11 +5,12 @@ import csv
 def ingredient_research(cursor):
     ingredient_property = str(input("Enter the researched property of your raw material : ")) 
     ingredient_property = f"%{ingredient_property}%" #f-string function to add % around ingredient_property
-    cursor.execute("SELECT COSING, INCI FROM INGREDIENTS WHERE DESCRIPTION OR FONCTION LIKE ?", (ingredient_property,))
+    cursor.execute("SELECT COSING, INCI FROM INGREDIENTS WHERE DESCRIPTION LIKE ? OR FONCTION LIKE ?", (ingredient_property, ingredient_property))
     line = cursor.fetchone()
     while line:
         print(line)
         line = cursor.fetchone()
+
     cosing = str(input("Enter the COSING number of the chosen raw material : "))
     return cosing
 
@@ -37,14 +38,14 @@ def save_formulation (formulation, cursor, filename):
             elt = cursor.fetchone()
             if elt:
                 writer.writerow([ingredient[0], elt[0], elt[1], ingredient[1]])
-    print("Formulation saved into",filename,".")
+    print("Formulation saved into",filename)
 
 connection_db = sqlite3.connect("laboratoire.db")
 cursor = connection_db.cursor()
 
 formulation = []
 
-#program loop
+#main program loop
 j = True
 while j :
 
@@ -55,6 +56,7 @@ while j :
 
     j = int(input("Enter your choice : "))
 
+    #create a formulation
     if j == 1 :
         
         #new formulation
@@ -70,19 +72,26 @@ while j :
             if i != "yes" :
                 i = False
         
+        show_formulation (formulation, cursor)
+
         #formulation saving (into csv file)
         save = str(input("Enter 'yes' if you want to save your formulation into a csv file or 'no' if you doesn't want to save : "))
         if save == "yes":
-            save_formulation (formulation, cursor, "formulation.csv")
+            user_file_name = str(input("Enter the name of your file :"))
+            user_file_name += ".csv"
+            save_formulation (formulation, cursor, user_file_name)
         else:
             print("Formulation not saved. Back to main menu.")
     
+    #Enter results data from formulation test
     if j == 2 :
         print("enter results")
 
+    #Show formulation
     if j == 3 :
         show_formulation (formulation, cursor)
 
+    #Quit software
     if j == 4 :
         print("Program left.")
         j = False
