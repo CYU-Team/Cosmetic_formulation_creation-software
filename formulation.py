@@ -5,7 +5,7 @@ import csv
 def ingredient_research(cursor):
     ingredient_property = str(input("Enter the researched property of your raw material : ")) 
     ingredient_property = f"%{ingredient_property}%" #f-string function to add % around ingredient_property
-    cursor.execute("SELECT COSING NUMBER, INCI FROM INGREDIENTS WHERE DESCRIPTION LIKE ?", (ingredient_property,))
+    cursor.execute("SELECT COSING, INCI FROM INGREDIENTS WHERE DESCRIPTION OR FONCTION LIKE ?", (ingredient_property,))
     line = cursor.fetchone()
     while line:
         print(line)
@@ -17,7 +17,7 @@ def show_formulation (formulation, cursor) :
     nom_tranches = []
     taille_tranches = []
     for ingredient in formulation :
-        requete = 'SELECT INCI, Function FROM INGREDIENTS WHERE COSING NUMBER = ' + ingredient [0] ;
+        requete = 'SELECT INCI, FONCTION FROM INGREDIENTS WHERE COSING = ' + ingredient [0] ;
         cursor.execute(requete)
         elt = cursor.fetchone()
         nom_tranches.append (elt [0] + " (" + ingredient [0] + ")")
@@ -32,7 +32,7 @@ def save_formulation (formulation, cursor, filename):
         writer = csv.writer(file)
         writer.writerow(["COSING_Ref_No", "INCI_name", "Function", "Volume (mL)"])
         for ingredient in formulation:
-            requete = 'SELECT INCI, FONCTION FROM INGREDIENTS WHERE COSING NUMBER = ' + ingredient [0] ;
+            requete = 'SELECT INCI, FONCTION FROM INGREDIENTS WHERE COSING = ' + ingredient [0] ;
             cursor.execute(requete)
             elt = cursor.fetchone()
             if elt:
@@ -70,25 +70,18 @@ while j :
             if i != "yes" :
                 i = False
         
-        #formulation saving
+        #formulation saving (into csv file)
         save = str(input("Enter 'yes' if you want to save your formulation into a csv file or 'no' if you doesn't want to save : "))
         if save == "yes":
             save_formulation (formulation, cursor, "formulation.csv")
         else:
-            print("formulation not saved.")
+            print("Formulation not saved. Back to main menu.")
     
     if j == 2 :
         print("enter results")
 
     if j == 3 :
         show_formulation (formulation, cursor)
-        
-        
-    #j = str(input("Enter 'yes' if you want to make a new formulation or 'no' if you doesn't want to make a new one : "))
-    #if j != "yes" :
-    #   j = False
-    #else :
-    #   formulation = []
 
     if j == 4 :
         print("Program left.")
