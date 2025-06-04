@@ -2,6 +2,15 @@ import sqlite3
 import matplotlib.pyplot as plt
 import csv
 
+def phase_creation():
+    phase = []
+    phase_type = str(input("Enter process type:"))
+    speed = float(input("Enter mixing speed (RPM):"))
+    temperature = float(input("Enter process temperature (°C):"))
+    time = float(input("Enter process duration (min):"))
+    phase.append([phase_type, speed, temperature, time])#ne pas mettre sous forme de liste ?
+    return phase #return les 4 : hase_type, speed, temperature, time ?
+
 def ingredient_research(cursor):
     ingredient_property = str(input("Enter the researched property of your raw material : ")) 
     ingredient_property = f"%{ingredient_property}%" #f-string function to add % around ingredient_property
@@ -45,12 +54,6 @@ cursor = connection_db.cursor()
 
 formulation = []
 
-#user authentication
-id_personne = int(input("Enter your personnal user ID :"))
-cursor.execute("SELECT NOM, PRENOM FROM PERSONNE WHERE ID_PERSONNE = ?", (id_personne,))
-user = cursor.fetchone()
-print(user, "sucsessfully loged.")
-
 #main program loop
 j = True
 while j :
@@ -66,23 +69,48 @@ while j :
     if j == 1 :
         
         #new formulation
-        formulation = [] 
+        formulation = []
 
-        #raw material research loop
-        i = True
-        while i :
-            cosing = ingredient_research(cursor)
-            v = float(input("Enter the desired volume (mL) : "))
-            formulation.append([cosing, v])
-            i = str(input("Enter 'yes' if you want to enter a new raw materiel or 'no' if you doesn't want to add a new one : "))
-            if i != "yes" :
-                i = False
-        
-        show_formulation (formulation, cursor)
+        #user authentication
+        id_personne = int(input("Enter your personnal user ID :"))
+        cursor.execute("SELECT NOM, PRENOM FROM PERSONNE WHERE ID_PERSONNE = ?", (id_personne,))
+        user = cursor.fetchone()
+        print(user, "sucsessfully loged.")
+
+        #formulation creation
+        formulation_name = str(input("Enter the name of your new formulation : "))
+        phases_quantity = int(input("How many phases will need " + formulation_name + "?"))
+
+        for i in range(phases_quantity): #phases quantity loop
+
+            phase_creation()
+
+            #raw material research loop
+
+            raw_materials = []
+            i = True
+            while i :
+                cosing = ingredient_research(cursor)
+                v = float(input("Enter the desired volume (mL) : "))
+                raw_materials.append([cosing, v])
+                i = str(input("Enter 'yes' if you want to enter a new raw materiel or 'no' if you doesn't want to add a new one : "))
+                if i != "yes" :
+                    i = False
+
+            formulation.append([phase],[raw_materials])#marche pas
+
+        print(formulation)#pour voir si ça marche pr l'instant
+
+        #formulation saving in database
+        db_save = str(input("Enter 'yes' if you want to save your formulation into database or 'no' if you doesn't want to save : "))
+        if db_save == "yes":
+            print("faire une def enregistrement ?")
+        else:
+            print("Formulation not saved in database.")
 
         #formulation saving (into csv file)
-        save = str(input("Enter 'yes' if you want to save your formulation into a csv file or 'no' if you doesn't want to save : "))
-        if save == "yes":
+        csv_save = str(input("Enter 'yes' if you want to save your formulation into a csv file or 'no' if you doesn't want to save : "))
+        if csv_save == "yes":
             user_file_name = str(input("Enter the name of your file :"))
             user_file_name += ".csv"
             save_formulation_csv (formulation, cursor, user_file_name)
