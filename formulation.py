@@ -28,7 +28,7 @@ def show_formulation (formulation, cursor) :
         plt.title("Composition of the formulation")
         plt.show()
 
-def save_formulation (formulation, cursor, filename):
+def save_formulation_csv (formulation, cursor, filename):
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["COSING_Ref_No", "INCI_name", "Function", "Volume (mL)"])
@@ -44,6 +44,12 @@ connection_db = sqlite3.connect("laboratoire.db")
 cursor = connection_db.cursor()
 
 formulation = []
+
+#user authentication
+id_personne = int(input("Enter your personnal user ID :"))
+cursor.execute("SELECT NOM, PRENOM FROM PERSONNE WHERE ID_PERSONNE = ?", (id_personne,))
+user = cursor.fetchone()
+print(user, "sucsessfully loged.")
 
 #main program loop
 j = True
@@ -79,7 +85,7 @@ while j :
         if save == "yes":
             user_file_name = str(input("Enter the name of your file :"))
             user_file_name += ".csv"
-            save_formulation (formulation, cursor, user_file_name)
+            save_formulation_csv (formulation, cursor, user_file_name)
         else:
             print("Formulation not saved. Back to main menu.")
     
