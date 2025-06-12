@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import csv
 
 def phase_creation():
-    phase = []
+    
     phase_type = str(input("Enter process type:"))
     speed = float(input("Enter mixing speed (RPM):"))
     temperature = float(input("Enter process temperature (°C):"))
     time = float(input("Enter process duration (min):"))
-    phase.append([phase_type, speed, temperature, time])#ne pas mettre sous forme de liste ?
-    return phase #return les 4 : hase_type, speed, temperature, time ?
+    
+    cursor.execute("INSERT INTO PHASE WHERE ")
 
 def ingredient_research(cursor):
     ingredient_property = str(input("Enter the researched property of your raw material : ")) 
@@ -22,6 +22,17 @@ def ingredient_research(cursor):
 
     cosing = str(input("Enter the COSING number of the chosen raw material : "))
     return cosing
+
+def db_research_formulation(cursor):
+        cursor.execute("SELECT NOM_FORMULATION FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        formulation_name = cursor.fetchone()
+        cursor.execute("SELECT ID_CREATEUR FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        result = cursor.fetchone()
+        creator_id = result[0]
+        cursor.execute("SELECT PRENOM, NOM FROM PERSONNE WHERE ID_PERSONNE = ?", (creator_id,))
+        creator_name = cursor.fetchone()
+        
+        print(formulation_name,", created by ",creator_name)
 
 def show_formulation (formulation, cursor) :
     nom_tranches = []
@@ -79,6 +90,7 @@ while j :
 
         #formulation creation
         formulation_name = str(input("Enter the name of your new formulation : "))
+        ##cursor.execute("INSERT INTO FORMULATION") à faire
         phases_quantity = int(input("How many phases will need " + formulation_name + "?"))
 
         for i in range(phases_quantity): #phases quantity loop
@@ -123,8 +135,21 @@ while j :
 
     #Show formulation
     if j == 3 :
-        show_formulation (formulation, cursor)
-
+        
+        print("Formulations available in database :")
+        
+        #Show formulations saved in db
+        cursor.execute("SELECT ID_FORMULATION, NOM_FORMULATION FROM FORMULATION ;")
+        results = cursor.fetchall()
+        
+        print(results)
+        
+        #Select formu from db
+        choice = int(input("Enter the ID from the desired formulaton : "))
+        
+        db_research_formulation(cursor)
+        
+        
     #Quit software
     if j == 4 :
         print("Program left.")
