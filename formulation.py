@@ -31,8 +31,14 @@ def db_research_formulation(cursor):
         creator_id = result[0]
         cursor.execute("SELECT PRENOM, NOM FROM PERSONNE WHERE ID_PERSONNE = ?", (creator_id,))
         creator_name = cursor.fetchone()
+        cursor.execute("SELECT DATE_EXP FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        exp_date = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) FROM PHASE WHERE ID_FORMULATION = ?", (choice,))
+        phases_nb = cursor.fetchone()
+        cursor.execute("SELECT TYPE_OPERATION, TEMPERATURE, DUREE, VITESSE FROM PHASE WHERE ID_FORMULATION = ?", (choice,))
+        phase_info = cursor.fetchone()
         
-        print(formulation_name,", created by ",creator_name)
+        print(formulation_name,", created by ",creator_name, " on ",exp_date, ". This formulation contains ",phases_nb," phases :",phase_info)
 
 def show_formulation (formulation, cursor) :
     nom_tranches = []
