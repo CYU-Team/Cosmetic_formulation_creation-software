@@ -69,6 +69,43 @@ def save_formulation_csv (formulation, cursor, filename):
 connection_db = sqlite3.connect("laboratoire.db")
 cursor = connection_db.cursor()
 
+def find_ID (cursor,id_personne):
+    
+    cursor.execute("SELECT NOM, PRENOM FROM PERSONNE WHERE ID_PERSONNE = ?", (id_personne,))
+    user = cursor.fetchone()
+    if user:
+           return (f"{user[0]} {user[1]}")
+    else:
+           return "User ID not found"
+       
+def find_formualtion (cursor,ID_formulation):
+    cursor.execute("SELECT * FROM FORMULATION WHERE ID_FORMULATION = ?", (ID_formulation,))
+    selected_formul = cursor.fetchone()
+    
+    if selected_formul:                      
+            return(f"{selected_formul[1]}")
+    else:           
+            return "Aucune formulation trouvée avec cet ID."
+
+def db_research_resultat_test(cursor):
+        cursor.execute("SELECT NOM_FORMULATION FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        formulation_name = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) FROM RESULTAT_TEST WHERE ID_FORMULATION = ?", (choice,))
+        tests_nb = cursor.fetchone() [0]
+        cursor.execute("SELECT ASPECT, CONSISTANCE, HOMOGENEITE, ODEUR, TOUCHER, SENSATION, EMULSION, REMARQUES,TESTEUR, DATE_TEST FROM RESULTAT_TEST WHERE ID_FORMULATION = ?", (choice,))
+        resultat_info = cursor.fetchall()  
+        print(f"There is {tests_nb} test currently for the formulation {formulation_name[0]}")
+        for i, test in enumerate(resultat_info, start=1):
+            testeur_name=find_ID (cursor,test[8])
+            print(f"""  Test {i} made by {testeur_name} on {test[9]}: 
+                  - Aspect = {test[0]} 
+                  - Consistency = {test[1]}
+                  - Homogeneity = {test[2]} 
+                  - Smell = {test[3]} 
+                  - Touch = {test[4]} 
+                  - Feel = {test[5]}  
+                  - Emulsion = {test[6]} 
+                  - Remarks = {test[7]}""")
 formulation = []
 
 #main program loop
@@ -137,7 +174,32 @@ while j :
     
     #Enter results data from formulation test
     if j == 2 :
-        print("enter results")
+        print("--- Formulations available ---")
+        cursor.execute("SELECT ID_FORMULATION, NOM_FORMULATION FROM FORMULATION")
+        formul_list = cursor.fetchall()
+        for f in formul_list:
+                print(f"ID: {f[0]}  Nom: {f[1]}  ")        
+        choice_formulation = int(input("Write the ID of the formulation you want to try: "))
+        name_formulation=find_formualtion(cursor,choice_formulation)
+        id_personne = int(input("Enter your personnal user ID :"))
+        ID_CREATEUR=find_ID (cursor,id_personne)
+        print("Well",ID_CREATEUR,"you want to test", name_formulation)
+        
+        cursor.execute("SELECT COUNT (*) FROM RESULTAT_TEST",)
+        nombre_resultat_test = cursor.fetchone()[0]
+        ID_resultat=nombre_resultat_test + 1
+        date_creation= str(input("Enter the date of the manipulation(YYYY-MM-DD) :"))
+        aspect=input("What an aspect?")
+        consistency=input("What consistency ?")
+        homogenity=input("What homogenity ?")
+        smell=input("What smell ?")
+        sense_of_touch=input("What sense of touch ?")
+        feeling_on_the_skin=input("What feeling on the skin ?")
+        emultion=input("What emultion ?")
+        remarks=input( "Remarks?")
+        cursor.execute(""" INSERT INTO RESULTAT_TEST(ID_RESULTAT, DATE_TEST, ASPECT, CONSISTANCE, HOMOGENEITE, ODEUR, TOUCHER, SENSATION, EMULSION, REMARQUES, TESTEUR, ID_FORMULATION)VALUES (?, ?, ?, ?,?,?,?,?,?,?,?,?)""", (ID_resultat, date_creation, aspect, consistency, homogenity, smell, sense_of_touch, feeling_on_the_skin, emultion, remarks,  ID_CREATEUR, choice_formulation ))
+        connection_db.commit()
+        print(ID_CREATEUR,"your test as save in database for", name_formulation)
 
     #Show formulation
     if j == 3 :
@@ -147,13 +209,16 @@ while j :
         #Show formulations saved in db
         cursor.execute("SELECT ID_FORMULATION, NOM_FORMULATION FROM FORMULATION ;")
         results = cursor.fetchall()
+        for f in results:
+                print(f"ID: {f[0]}  Nom: {f[1]}  ")
         
-        print(results)
+        
         
         #Select formu from db
         choice = int(input("Enter the ID from the desired formulaton : "))
         
         db_research_formulation(cursor)
+        db_research_resultat_test(cursor)
         
         
     #Quit software
