@@ -2,14 +2,6 @@ import sqlite3
 import matplotlib.pyplot as plt
 import csv
 
-def phase_creation():
-    
-    phase_type = str(input("Enter process type:"))
-    speed = float(input("Enter mixing speed (RPM):"))
-    temperature = float(input("Enter process temperature (°C):"))
-    time = float(input("Enter process duration (min):"))
-    
-    cursor.execute("INSERT INTO PHASE WHERE ")
 
 def ingredient_research(cursor):
     ingredient_property = str(input("Enter the researched property of your raw material : ")) 
@@ -23,51 +15,9 @@ def ingredient_research(cursor):
     cosing = str(input("Enter the COSING number of the chosen raw material : "))
     return cosing
 
-def db_research_formulation(cursor):
-        cursor.execute("SELECT NOM_FORMULATION FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
-        formulation_name = cursor.fetchone()
-        cursor.execute("SELECT ID_CREATEUR FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
-        result = cursor.fetchone()
-        creator_id = result[0]
-        cursor.execute("SELECT PRENOM, NOM FROM PERSONNE WHERE ID_PERSONNE = ?", (creator_id,))
-        creator_name = cursor.fetchone()
-        cursor.execute("SELECT DATE_EXP FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
-        exp_date = cursor.fetchone()
-        cursor.execute("SELECT COUNT(*) FROM PHASE WHERE ID_FORMULATION = ?", (choice,))
-        phases_nb = cursor.fetchone()
-        cursor.execute("SELECT TYPE_OPERATION, TEMPERATURE, DUREE, VITESSE FROM PHASE WHERE ID_FORMULATION = ?", (choice,))
-        phase_info = cursor.fetchone()
-        
-        print(formulation_name,", created by ",creator_name, " on ",exp_date, ". This formulation contains ",phases_nb," phases :",phase_info)
+    
 
-def show_formulation (formulation, cursor) :
-    nom_tranches = []
-    taille_tranches = []
-    for ingredient in formulation :
-        requete = 'SELECT INCI, FONCTION FROM INGREDIENTS WHERE COSING = ' + ingredient [0] ;
-        cursor.execute(requete)
-        elt = cursor.fetchone()
-        nom_tranches.append (elt [0] + " (" + ingredient [0] + ")")
-        taille_tranches.append (ingredient [1])
-        print ("- ", ingredient [1], "ml de ", elt [0], "(",elt [1], ") [", ingredient [0], "]")
-        plt.pie(taille_tranches, labels = nom_tranches, autopct = "%1.1f%%")
-        plt.title("Composition of the formulation")
-        plt.show()
-
-def save_formulation_csv (formulation, cursor, filename):
-    with open(filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["COSING_Ref_No", "INCI_name", "Function", "Volume (mL)"])
-        for ingredient in formulation:
-            requete = 'SELECT INCI, FONCTION FROM INGREDIENTS WHERE COSING = ' + ingredient [0] ;
-            cursor.execute(requete)
-            elt = cursor.fetchone()
-            if elt:
-                writer.writerow([ingredient[0], elt[0], elt[1], ingredient[1]])
-    print("Formulation saved into",filename)
-
-connection_db = sqlite3.connect("laboratoire.db")
-cursor = connection_db.cursor()
+  
 
 def find_ID (cursor,id_personne):
     
@@ -85,8 +35,52 @@ def find_formualtion (cursor,ID_formulation):
     if selected_formul:                      
             return(f"{selected_formul[1]}")
     else:           
-            return "Aucune formulation trouvée avec cet ID."
+            return "No wording found with this ID."
+        
 
+def find_name_ingredient (cosing,cursor):
+    
+    cursor.execute("SELECT INCI FROM INGREDIENTS WHERE COSING=?", (cosing,))
+    name=cursor.fetchone()
+    return (f"{name[0]}")
+
+
+def db_research_formulation(cursor):
+        cursor.execute("SELECT NOM_FORMULATION FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        formulation_name = cursor.fetchone()
+        cursor.execute("SELECT ID_CREATEUR FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        result = cursor.fetchone()
+        creator_id = result[0]
+        cursor.execute("SELECT PRENOM, NOM FROM PERSONNE WHERE ID_PERSONNE = ?", (creator_id,))
+        creator_name = cursor.fetchone()
+        cursor.execute("SELECT DATE_EXP FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
+        exp_date = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) FROM PHASE WHERE ID_FORMULATION = ?", (choice,))
+        phases_nb = cursor.fetchone()
+        
+        cursor.execute("SELECT ID_PHASE, TYPE_OPERATION, TEMPERATURE, DUREE, VITESSE FROM PHASE WHERE ID_FORMULATION = ?", (choice,))
+        phase_info = cursor.fetchall() 
+        
+       
+        print(f"{formulation_name[0]}, created by {creator_name[0]} {creator_name[1]} on {exp_date[0]}.")
+        print(f"This formulation contains {phases_nb} phases:")
+        for i, phase in enumerate(phase_info, start=1):
+            ID_PHASE = phase[0]
+            print(f"  Phase {i}: Operation={phase[1]}, Temp={phase[2]}°C, Duration={phase[3]}min, Speed={phase[4]} RPM")        
+            cursor.execute("SELECT ID_INGREDIENT, MASSE FROM COMPOS_PHASE_INGREDIENT WHERE ID_PHASE = ?", (ID_PHASE,))
+            ingredient_info = cursor.fetchall()           
+            
+            if ingredient_info:
+               print("    Ingredients:")
+               for ing in ingredient_info:
+                   inci_name = find_name_ingredient(ing[0], cursor)
+                   print(f"      - {ing[1]} g of {inci_name} (COSING {ing[0]})")
+            else:
+               print("    No ingredients in this phase.")
+        
+       
+            
+            
 def db_research_resultat_test(cursor):
         cursor.execute("SELECT NOM_FORMULATION FROM FORMULATION WHERE ID_FORMULATION = ?", (choice,))
         formulation_name = cursor.fetchone()
@@ -106,7 +100,14 @@ def db_research_resultat_test(cursor):
                   - Feel = {test[5]}  
                   - Emulsion = {test[6]} 
                   - Remarks = {test[7]}""")
-formulation = []
+        
+
+       
+
+connection_db = sqlite3.connect("laboratoire.db")
+cursor = connection_db.cursor()
+
+
 
 #main program loop
 j = True
@@ -122,55 +123,68 @@ while j :
     #create a formulation
     if j == 1 :
         
-        #new formulation
-        formulation = []
-
+        
+        
+        
         #user authentication
         id_personne = int(input("Enter your personnal user ID :"))
-        cursor.execute("SELECT NOM, PRENOM FROM PERSONNE WHERE ID_PERSONNE = ?", (id_personne,))
-        user = cursor.fetchone()
-        print(user, "sucsessfully loged.")
-
+        ID=find_ID(cursor,id_personne)
+        print("Hi",ID)
         #formulation creation
         formulation_name = str(input("Enter the name of your new formulation : "))
-        ##cursor.execute("INSERT INTO FORMULATION") à faire
         phases_quantity = int(input("How many phases will need " + formulation_name + "?"))
+        
+        cursor.execute("SELECT COUNT(*) FROM FORMULATION")
+        nombre_formulation = cursor.fetchone()[0]
+        ID_Formulation = nombre_formulation + 1
+        cursor.execute("SELECT MAX(ID_PHASE) FROM PHASE")
+        last_id_phase = cursor.fetchone()[0]
+        last_id_phase = last_id_phase + 10
+       
 
-        for i in range(phases_quantity): #phases quantity loop
-
-            phase_creation()
-
-            #raw material research loop
-
-            raw_materials = []
+        for i in range(phases_quantity):
+            ID_PHASE = last_id_phase + 1
+            last_id_phase = ID_PHASE   
+            
+           
+            phase_type = input("Enter process type: ")
+            speed = float(input("Enter mixing speed (RPM): "))
+            temperature = float(input("Enter process temperature (°C): "))
+            time = float(input("Enter process duration (min): "))
+            NUM_PHASE = i
+            cursor.execute(""" INSERT INTO PHASE (ID_PHASE, TYPE_OPERATION, TEMPERATURE, DUREE, VITESSE, NUM_PHASE, ID_FORMULATION) VALUES (?, ?, ?, ?, ?, ?, ?)""", (ID_PHASE, phase_type, temperature, time, speed, NUM_PHASE, ID_Formulation))
+            connection_db.commit()
+            print("Phase created.")
+            
             i = True
             while i :
                 cosing = ingredient_research(cursor)
-                v = float(input("Enter the desired volume (mL) : "))
-                raw_materials.append([cosing, v])
+                v = float(input("Enter the desired masse (g) : "))
+                cursor.execute(""" INSERT INTO COMPOS_PHASE_INGREDIENT(ID_PHASE, ID_INGREDIENT, MASSE)VALUES (?, ?, ?)""", (ID_PHASE, cosing, v))
+                connection_db.commit()
                 i = str(input("Enter 'yes' if you want to enter a new raw materiel or 'no' if you doesn't want to add a new one : "))
                 if i != "yes" :
                     i = False
 
-            formulation.append([phase],[raw_materials])#marche pas
-
-        print(formulation)#pour voir si ça marche pr l'instant
-
         #formulation saving in database
         db_save = str(input("Enter 'yes' if you want to save your formulation into database or 'no' if you doesn't want to save : "))
         if db_save == "yes":
-            print("faire une def enregistrement ?")
+            
+           
+            user_file_name = str(input("Enter the name of your file :"))
+            date_creation= str(input("Enter the date of the manipulation(YYYY-MM-DD) :"))
+            ID_manipilator= int (input ("Enter your ID :"))
+            cursor.execute(""" INSERT INTO FORMULATION(ID_FORMULATION, NOM_FORMULATION, DATE_EXP, ID_CREATEUR)VALUES (?, ?, ?, ?)""", (ID_Formulation, user_file_name, date_creation, ID_manipilator))
+            connection_db.commit()
+            print("Formulation saved in the database.")
+            
+            
         else:
             print("Formulation not saved in database.")
+        
+       
 
-        #formulation saving (into csv file)
-        csv_save = str(input("Enter 'yes' if you want to save your formulation into a csv file or 'no' if you doesn't want to save : "))
-        if csv_save == "yes":
-            user_file_name = str(input("Enter the name of your file :"))
-            user_file_name += ".csv"
-            save_formulation_csv (formulation, cursor, user_file_name)
-        else:
-            print("Formulation not saved. Back to main menu.")
+        
     
     #Enter results data from formulation test
     if j == 2 :
@@ -200,27 +214,18 @@ while j :
         cursor.execute(""" INSERT INTO RESULTAT_TEST(ID_RESULTAT, DATE_TEST, ASPECT, CONSISTANCE, HOMOGENEITE, ODEUR, TOUCHER, SENSATION, EMULSION, REMARQUES, TESTEUR, ID_FORMULATION)VALUES (?, ?, ?, ?,?,?,?,?,?,?,?,?)""", (ID_resultat, date_creation, aspect, consistency, homogenity, smell, sense_of_touch, feeling_on_the_skin, emultion, remarks,  ID_CREATEUR, choice_formulation ))
         connection_db.commit()
         print(ID_CREATEUR,"your test as save in database for", name_formulation)
+        
 
     #Show formulation
     if j == 3 :
-        
-        print("Formulations available in database :")
-        
-        #Show formulations saved in db
-        cursor.execute("SELECT ID_FORMULATION, NOM_FORMULATION FROM FORMULATION ;")
-        results = cursor.fetchall()
-        for f in results:
+        print("--- Formulations available ---")
+        cursor.execute("SELECT ID_FORMULATION, NOM_FORMULATION FROM FORMULATION")
+        formul_list = cursor.fetchall()
+        for f in formul_list:
                 print(f"ID: {f[0]}  Nom: {f[1]}  ")
-        
-        
-        
-        #Select formu from db
         choice = int(input("Enter the ID from the desired formulaton : "))
-        
         db_research_formulation(cursor)
         db_research_resultat_test(cursor)
-        
-        
     #Quit software
     if j == 4 :
         print("Program left.")
